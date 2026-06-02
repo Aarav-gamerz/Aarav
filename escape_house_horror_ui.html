@@ -1,0 +1,287 @@
+
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Rajdhani:wght@400;500;600&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#wrap{width:100%;background:#000;border-radius:10px;overflow:hidden;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;width:100%;background:#000}
+#hud{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px;pointer-events:none;flex-wrap:wrap;align-items:flex-start}
+.hb{background:rgba(0,0,0,0.88);color:#bbb;font:500 11px 'Rajdhani',monospace;padding:4px 11px;border-radius:5px;border:1px solid rgba(180,0,0,0.3);letter-spacing:.5px}
+#hb-inv{color:#f7c775}
+#hb-st{color:#aaa}
+#tip{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.92);color:#e8c97a;font:600 12px 'Rajdhani',monospace;padding:5px 16px;border-radius:20px;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity 0.3s;border:1px solid rgba(180,80,0,0.35);letter-spacing:.8px}
+#fear{position:absolute;inset:0;pointer-events:none;border-radius:10px;opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(140,0,0,0.55) 100%)}
+#dpad{position:absolute;bottom:8px;right:8px;display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:3px}
+.dp{background:rgba(20,0,0,0.7);border:1px solid rgba(180,0,0,0.35);border-radius:6px;display:flex;align-items:center;justify-content:center;font:700 14px 'Orbitron',monospace;color:#cc4444;cursor:pointer;touch-action:none;transition:background .15s}
+.dp:active,.dp.pressed{background:rgba(120,0,0,0.5);color:#ff8888}
+#sprbtn{position:absolute;bottom:8px;left:8px;background:rgba(20,0,0,0.7);border:1px solid rgba(180,60,0,0.4);color:#e8a040;font:700 10px 'Orbitron',monospace;padding:10px 12px;border-radius:7px;cursor:pointer;touch-action:none;letter-spacing:.5px}
+
+/* OVERLAY */
+#ol{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;color:#fff;gap:0;border-radius:10px;z-index:30;overflow:hidden}
+#ol-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,rgba(100,0,0,0.35) 0%,#000 65%);pointer-events:none}
+#ol-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px}
+
+/* Title */
+#ol-title{font-family:'Creepster',cursive;font-size:46px;color:#e8c050;text-shadow:0 0 18px #cc6600,0 0 40px #aa3300,0 2px 0 #000;letter-spacing:3px;line-height:1;text-align:center;animation:flicker 4s infinite}
+@keyframes flicker{0%,92%,96%,100%{opacity:1}93%{opacity:.7}95%{opacity:.85}97%{opacity:.75}}
+
+/* Drip effect under title */
+#drips{display:flex;gap:0;height:18px;margin-top:-6px}
+.drip{width:4px;background:linear-gradient(to bottom,#cc4400,transparent);border-radius:0 0 3px 3px;animation:drip-fall linear infinite}
+@keyframes drip-fall{0%{height:0;opacity:1}60%{height:18px;opacity:1}100%{height:18px;opacity:0}}
+
+#ol-sub{font:600 13px 'Rajdhani',sans-serif;color:#884422;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+
+#ol-divider{width:200px;height:1px;background:linear-gradient(to right,transparent,#882200,transparent);margin:4px 0}
+
+#ol-story{font:400 13px 'Rajdhani',sans-serif;color:#886655;text-align:center;line-height:1.75;max-width:260px;letter-spacing:.3px}
+
+#ol-hints{background:rgba(40,0,0,0.6);border:1px solid rgba(140,0,0,0.3);border-radius:8px;padding:10px 18px;font:500 12px 'Rajdhani',sans-serif;color:#888;line-height:1.8;text-align:center;letter-spacing:.4px}
+#ol-hints span{color:#e8c050}
+
+#ol-btn{font:700 13px 'Orbitron',sans-serif;color:#e8c050;background:rgba(60,10,0,0.8);border:1px solid rgba(200,80,0,0.5);padding:11px 32px;border-radius:8px;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:all .2s;text-shadow:0 0 8px #aa4400;box-shadow:0 0 10px rgba(200,80,0,0.15)}
+#ol-btn:hover{background:rgba(100,20,0,0.9);box-shadow:0 0 20px rgba(220,100,0,0.35);color:#ffd060}
+
+/* HUD icons */
+.hb-icon{color:#cc3333;margin-right:4px}
+</style>
+
+<div id="wrap">
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="hb" id="hb-room">🏠 Hall</div>
+  <div class="hb" id="hb-inv">🎒 Empty</div>
+  <div class="hb" id="hb-st">Find a clue to escape</div>
+</div>
+<div id="tip">tip</div>
+<div id="fear"></div>
+<div id="sprbtn">⚡ SPRINT</div>
+<div id="dpad">
+  <div></div><div class="dp" data-d="u">↑</div><div></div>
+  <div class="dp" data-d="l">←</div>
+  <div class="dp" data-d="e" style="font-size:9px;color:#e8a040;line-height:1.2">USE<br>E</div>
+  <div class="dp" data-d="r">→</div>
+  <div></div><div class="dp" data-d="d">↓</div><div></div>
+</div>
+
+<div id="ol">
+  <div id="ol-bg"></div>
+  <div id="ol-content">
+    <div id="ol-title">Escape<br>the House</div>
+    <div id="drips">
+      ${Array.from({length:18},(_,i)=>`<div class="drip" style="height:${4+Math.random()*14}px;opacity:${0.4+Math.random()*0.6};animation-duration:${2+Math.random()*3}s;animation-delay:${Math.random()*3}s;width:${3+Math.random()*3}px;background:linear-gradient(to bottom,#cc2200,transparent)"></div>`).join('')}
+    </div>
+    <div id="ol-sub">— A Horror Escape Game —</div>
+    <div id="ol-divider"></div>
+    <div id="ol-story">You woke up locked inside.<br>The teacher is hunting you.<br>Find the key. Get out. Survive.</div>
+    <div id="ol-hints">
+      <span>WASD / Arrows</span> — Move<br>
+      <span>E / USE</span> — Interact<br>
+      <span>Shift / Sprint</span> — Run
+    </div>
+    <button id="ol-btn" id="sb">▶ ENTER</button>
+  </div>
+</div>
+</div>
+
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const T=32,W=20,H=15;
+cv.width=W*T;cv.height=H*T;
+
+let ac=null;
+function audio(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();}
+function tone(f,d,v=0.1,tp='sine',dl=0){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=tp;o.frequency.value=f;g.gain.setValueAtTime(0.001,ac.currentTime+dl);g.gain.linearRampToValueAtTime(v,ac.currentTime+dl+0.01);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dl+d);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+dl);o.stop(ac.currentTime+dl+d+0.05);}
+let hbInt=null,hbOn=false;
+function hbStart(fast){if(hbOn)return;hbOn=true;function b(){tone(58,0.07,0.2,'sine');setTimeout(()=>tone(52,0.05,0.15,'sine'),140);}b();hbInt=setInterval(b,fast?380:680);}
+function hbStop(){hbOn=false;if(hbInt){clearInterval(hbInt);hbInt=null;}}
+function sndStep(){tone(85+Math.random()*12,0.055,0.035,'triangle');}
+function sndPickup(){[520,660,780].forEach((f,i)=>tone(f,0.16,0.16,'sine',i*0.1));}
+function sndLocked(){tone(170,0.07,0.18,'square');tone(130,0.14,0.18,'square',0.1);}
+function sndDoor(){tone(210,0.22,0.1,'sawtooth');}
+function sndCode(){tone(880,0.05,0.09);}
+function sndCaught(){for(let i=0;i<7;i++)tone(270-i*22,0.16,0.22,'sawtooth',i*0.11);}
+function sndWin(){[520,660,780,1040,1320].forEach((f,i)=>tone(f,0.26,0.18,'sine',i*0.12));}
+
+function mkWalls(){const s=new Set();for(let x=0;x<W;x++){s.add(x+',0');s.add(x+','+(H-1));}for(let y=0;y<H;y++){s.add('0,'+y);s.add((W-1)+','+y);}return s;}
+const BW=mkWalls();
+const FW={
+  hall:new Set(['2,2','3,2','4,2','9,5','10,5','16,3','16,4','17,3','17,4']),
+  bedroom:new Set(['13,2','14,2','15,2','16,2','13,3','14,3','15,3','16,3','2,2','3,2','2,3','3,3','7,11','8,11','9,11']),
+  kitchen:new Set(['2,2','3,2','4,2','5,2','6,2','7,2','2,3','8,6','9,6','10,6','8,7','9,7','10,7','15,10','16,10','17,10','15,11','16,11','17,11'])
+};
+function blocked(nx,ny,room){const fw=FW[room];for(const[px,py]of[[nx+3,ny+3],[nx+T-5,ny+3],[nx+3,ny+T-5],[nx+T-5,ny+T-5]]){const tx=Math.floor(px/T),ty=Math.floor(py/T);if(BW.has(tx+','+ty)||fw.has(tx+','+ty))return true;}return false;}
+const FV={
+  hall:[{x:2,y:2,w:3,h:1,c:'#1e1433',e:'🛋️'},{x:9,y:5,w:2,h:1,c:'#2a1800',e:'🪑'},{x:16,y:3,w:2,h:2,c:'#111122',e:''}],
+  bedroom:[{x:13,y:2,w:4,h:2,c:'#120826',e:'🛏️'},{x:2,y:2,w:2,h:2,c:'#111100',e:'🪞'},{x:7,y:11,w:3,h:1,c:'#1a1000',e:''},{x:14,y:9,w:2,h:2,c:'#111122',e:''}],
+  kitchen:[{x:2,y:2,w:6,h:1,c:'#1a1000',e:'🍳'},{x:2,y:3,w:1,h:2,c:'#0a1a1a',e:'🧊'},{x:8,y:6,w:3,h:2,c:'#1a1000',e:'🪑'},{x:15,y:10,w:3,h:2,c:'#111122',e:''}]
+};
+
+function mkItems(){return{
+  hall:[
+    {id:'exit',x:10,y:0,tp:'exit',e:'🚪',lb:'Exit Door'},
+    {id:'dbr',x:19,y:7,tp:'door',to:'bedroom',e:'🚪',lb:'→ Bedroom'},
+    {id:'dki',x:0,y:7,tp:'door',to:'kitchen',e:'🚪',lb:'← Kitchen'},
+    {id:'note',x:6,y:8,tp:'note',e:'📝',lb:'Read Note',msg:'Key is hidden in the kitchen drawer. Code is in the bedroom.',done:false}
+  ],
+  bedroom:[
+    {id:'dhl',x:1,y:7,tp:'door',to:'hall',e:'🚪',lb:'→ Hall'},
+    {id:'note2',x:15,y:10,tp:'note',e:'📝',lb:'Read Bedroom Note',msg:'🔑 Drawer code = 1 2 3 4',done:false}
+  ],
+  kitchen:[
+    {id:'dhl2',x:19,y:7,tp:'door',to:'hall',e:'🚪',lb:'→ Hall'},
+    {id:'torch',x:5,y:11,tp:'torch',e:'🔦',lb:'Pick up Torch',done:false},
+    {id:'drw',x:4,y:4,tp:'drawer',e:'🔒',lb:'Locked Drawer',done:false}
+  ]
+};}
+let items=mkItems();
+
+function mkEnemy(){return{x:10*T,y:4*T,pIdx:0,chasing:false,path:[{x:6,y:3},{x:17,y:3},{x:17,y:12},{x:6,y:12},{x:6,y:7},{x:14,y:7}]};}
+let enemy=mkEnemy();
+
+let gs={room:'hall',hasKey:false,hasTorch:false,codeRead:false,won:false,lost:false,tipT:0};
+let pl={x:10*T,y:8*T};
+let kb={},dp={u:0,d:0,l:0,r:0},sprint=false,stepT=0,shk=0;
+let running=false;
+let CP={open:false,inp:'',item:null,el:null};
+
+function updateHUD(){
+  document.getElementById('hb-room').textContent={hall:'🏠 Hall',bedroom:'🛏️ Bedroom',kitchen:'🍳 Kitchen'}[gs.room];
+  document.getElementById('hb-inv').textContent=gs.hasKey?'🗝️ Key — go to EXIT!':'🎒 Empty';
+  document.getElementById('hb-st').textContent=gs.hasKey?'✓ Reach the EXIT now!':gs.codeRead?'Open the kitchen drawer':'Find a clue to escape';
+}
+function showTip(msg,dur=2200){gs.tipT=dur;const el=document.getElementById('tip');el.textContent=msg;el.style.opacity=1;}
+
+function nearItems(){
+  const cx=pl.x+T/2,cy=pl.y+T/2;
+  return(items[gs.room]||[]).filter(it=>{
+    if(it.done&&it.tp!=='door'&&it.tp!=='exit')return false;
+    return Math.hypot(cx-it.x*T-T/2,cy-it.y*T-T/2)<T*2.2;
+  });
+}
+
+function interact(){
+  const near=nearItems();
+  if(!near.length){showTip('Nothing nearby');return;}
+  const it=near[0];
+  if(it.tp==='door'){goRoom(it.to);return;}
+  if(it.tp==='exit'){if(gs.hasKey){gs.won=true;sndWin();showOver('win');}else{sndLocked();showTip('🔒 Door locked — you need the key!');}return;}
+  if(it.tp==='note'){if(it.id==='note2')gs.codeRead=true;showTip(it.msg,4000);updateHUD();return;}
+  if(it.tp==='torch'){it.done=true;gs.hasTorch=true;sndPickup();showTip('🔦 Torch picked up — vision improved!');updateHUD();return;}
+  if(it.tp==='drawer'){openCP(it);return;}
+}
+function goRoom(to){sndDoor();gs.room=to;if(to==='hall'){pl.x=10*T;pl.y=8*T;}if(to==='bedroom'){pl.x=3*T;pl.y=7*T;}if(to==='kitchen'){pl.x=16*T;pl.y=7*T;}hbStop();updateHUD();showTip('Entered '+{hall:'the Hall',bedroom:'the Bedroom — be careful!',kitchen:'the Kitchen'}[to]);}
+
+function openCP(item){
+  CP.open=true;CP.inp='';CP.item=item;
+  const el=document.createElement('div');
+  el.id='cpd';
+  el.style.cssText='position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border-radius:10px;z-index:25';
+  el.innerHTML=`
+    <div style="font:700 18px 'Creepster',cursive;color:#e8c050;text-shadow:0 0 10px #aa4400;letter-spacing:2px">🔒 DRAWER CODE</div>
+    <div id="cdis" style="color:#fff;font:700 30px 'Orbitron',monospace;letter-spacing:12px;min-width:130px;text-align:center;border-bottom:1px solid #330000;padding-bottom:8px">_ _ _ _</div>
+    <div style="display:grid;grid-template-columns:repeat(3,52px);gap:8px">
+      ${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(n=>`<button onclick="cpP('${n}')" style="background:#0d0000;border:1px solid rgba(180,0,0,0.35);color:#cc9966;font:700 17px 'Orbitron',monospace;padding:12px 0;border-radius:7px;cursor:pointer">${n}</button>`).join('')}
+    </div>
+    <button onclick="cpX()" style="background:transparent;border:1px solid #220000;color:#442222;font:500 11px 'Rajdhani',monospace;padding:7px 20px;border-radius:6px;cursor:pointer;letter-spacing:1px">CANCEL</button>
+  `;
+  CP.el=el;document.getElementById('wrap').appendChild(el);
+}
+window.cpP=function(n){sndCode();if(n==='⌫')CP.inp=CP.inp.slice(0,-1);else if(n==='✓')cpSub();else if(CP.inp.length<4)CP.inp+=String(n);const d=document.getElementById('cdis');if(d)d.textContent=CP.inp.padEnd(4,'_').split('').join(' ');};
+window.cpX=function(){CP.open=false;if(CP.el)CP.el.remove();CP.el=null;};
+function cpSub(){
+  if(CP.inp==='1234'){gs.hasKey=true;CP.item.done=true;CP.item.e='📦';cpX();sndPickup();showTip('✅ Correct! 🗝️ Key found — reach the EXIT!',4000);updateHUD();}
+  else{tone(160,0.28,0.22,'square');const d=document.getElementById('cdis');if(d){d.style.color='#F09595';setTimeout(()=>{d.style.color='#fff';},450);}CP.inp='';setTimeout(()=>{const d=document.getElementById('cdis');if(d)d.textContent='_ _ _ _';},100);}
+}
+
+const lc=document.createElement('canvas');lc.width=W*T;lc.height=H*T;
+const lx=lc.getContext('2d');
+let last=0;
+
+function loop(ts){
+  if(!running){requestAnimationFrame(loop);return;}
+  const dt=Math.min((ts-last)/16.67,3);last=ts;
+  if(!gs.won&&!gs.lost&&!CP.open)update(dt);
+  draw();requestAnimationFrame(loop);
+}
+
+function update(dt){
+  let dx=0,dy=0;
+  if(kb['ArrowUp']||kb['w']||kb['W']||dp.u)dy=-1;
+  if(kb['ArrowDown']||kb['s']||kb['S']||dp.d)dy=1;
+  if(kb['ArrowLeft']||kb['a']||kb['A']||dp.l)dx=-1;
+  if(kb['ArrowRight']||kb['d']||kb['D']||dp.r)dx=1;
+  const spd=(sprint?4.4:2.3)*dt;
+  if(dx||dy){stepT+=dt;if(stepT>9){stepT=0;sndStep();}const nx=pl.x+dx*spd,ny=pl.y+dy*spd;if(!blocked(nx,pl.y,gs.room))pl.x=Math.max(T,Math.min((W-2)*T,nx));if(!blocked(pl.x,ny,gs.room))pl.y=Math.max(T,Math.min((H-2)*T,ny));}
+  if(gs.tipT>0){gs.tipT-=dt*16.67;if(gs.tipT<=0)document.getElementById('tip').style.opacity=0;}
+  if(gs.tipT<=0){const n=nearItems();if(n.length){const el=document.getElementById('tip');el.textContent='[ E ] '+n[0].lb;el.style.opacity=1;}}
+  if(gs.room==='bedroom'){
+    const e=enemy,dist=Math.hypot(pl.x-e.x,pl.y-e.y);
+    e.chasing=dist<130;
+    if(e.chasing){e.x+=(pl.x-e.x)*0.05*dt;e.y+=(pl.y-e.y)*0.05*dt;shk=Math.min(shk+0.3*dt,5);document.getElementById('fear').style.opacity=Math.min(0.9,(130-dist)/130*1.1).toFixed(2);hbStart(dist<60);}
+    else{const tg=e.path[e.pIdx],tx=tg.x*T,ty=tg.y*T;e.x+=(tx-e.x)*0.04*dt;e.y+=(ty-e.y)*0.04*dt;if(Math.abs(e.x-tx)<3&&Math.abs(e.y-ty)<3)e.pIdx=(e.pIdx+1)%e.path.length;shk=Math.max(0,shk-0.2*dt);document.getElementById('fear').style.opacity=0;hbStop();}
+    if(dist<24){gs.lost=true;sndCaught();showOver('lose');}
+  } else {shk=0;document.getElementById('fear').style.opacity=0;hbStop();}
+}
+
+function draw(){
+  ctx.save();
+  if(shk>0.1)ctx.translate((Math.random()-.5)*shk*2,(Math.random()-.5)*shk*2);
+  ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle={hall:'#0c0c1c',bedroom:'#080f08',kitchen:'#120808'}[gs.room];
+  ctx.fillRect(T,T,(W-2)*T,(H-2)*T);
+  ctx.strokeStyle='rgba(255,255,255,0.025)';ctx.lineWidth=0.5;
+  for(let x=1;x<W-1;x++)for(let y=1;y<H-1;y++)ctx.strokeRect(x*T,y*T,T,T);
+  for(const w of BW){const[wx,wy]=w.split(',').map(Number);ctx.fillStyle='#191932';ctx.fillRect(wx*T,wy*T,T,T);ctx.strokeStyle='rgba(80,80,180,0.3)';ctx.lineWidth=0.5;ctx.strokeRect(wx*T,wy*T,T,T);}
+  ctx.font='13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const f of FV[gs.room]||[]){ctx.fillStyle=f.c;ctx.fillRect(f.x*T+1,f.y*T+1,f.w*T-2,f.h*T-2);ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=0.5;ctx.strokeRect(f.x*T+1,f.y*T+1,f.w*T-2,f.h*T-2);if(f.e)ctx.fillText(f.e,f.x*T+f.w*T/2,f.y*T+f.h*T/2);}
+  for(const it of items[gs.room]||[]){if(it.done&&it.tp!=='exit')continue;if(it.tp==='exit'){ctx.fillStyle=gs.hasKey?'rgba(80,200,140,0.12)':'rgba(200,100,0,0.1)';ctx.fillRect(it.x*T,it.y*T,T,T);}ctx.font='19px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.e,it.x*T+T/2,it.y*T+T/2);}
+  if(gs.room==='bedroom'){const e=enemy;ctx.font=(e.chasing?'26px':'20px')+' monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('👿',e.x+T/2,e.y+T/2);if(e.chasing){ctx.font='700 9px monospace';ctx.fillStyle='#f09595';ctx.fillText('!!!',e.x+T/2,e.y-5);}}
+  ctx.font='28px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(sprint?'🏃':'🚶',pl.x+T/2,pl.y+T/2);
+  const rad=gs.hasTorch?195:115,pcx=pl.x+T/2,pcy=pl.y+T/2;
+  lx.clearRect(0,0,lc.width,lc.height);lx.fillStyle='rgba(0,0,0,0.95)';lx.fillRect(0,0,lc.width,lc.height);
+  const g2=lx.createRadialGradient(pcx,pcy,0,pcx,pcy,rad);
+  g2.addColorStop(0,'rgba(0,0,0,0)');g2.addColorStop(0.4,'rgba(0,0,0,0)');g2.addColorStop(0.7,'rgba(0,0,0,0.55)');g2.addColorStop(1,'rgba(0,0,0,0.95)');
+  lx.globalCompositeOperation='destination-out';lx.fillStyle=g2;lx.beginPath();lx.arc(pcx,pcy,rad,0,Math.PI*2);lx.fill();lx.globalCompositeOperation='source-over';
+  ctx.drawImage(lc,0,0);ctx.restore();
+}
+
+document.addEventListener('keydown',e=>{kb[e.key]=true;if(e.key==='Shift')sprint=true;if((e.key==='e'||e.key==='E')&&running&&!gs.won&&!gs.lost&&!CP.open)interact();if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+document.addEventListener('keyup',e=>{kb[e.key]=false;if(e.key==='Shift')sprint=false;});
+document.querySelectorAll('.dp').forEach(b=>{const d=b.dataset.d;b.addEventListener('pointerdown',ev=>{ev.preventDefault();audio();if(d==='e'){if(!CP.open&&!gs.won&&!gs.lost)interact();}else dp[d]=1;b.classList.add('pressed');});b.addEventListener('pointerup',()=>{dp[d]=0;b.classList.remove('pressed');});b.addEventListener('pointerleave',()=>{dp[d]=0;b.classList.remove('pressed');});});
+const sprbtn=document.getElementById('sprbtn');sprbtn.addEventListener('pointerdown',e=>{e.preventDefault();audio();sprint=true;});sprbtn.addEventListener('pointerup',()=>sprint=false);sprbtn.addEventListener('pointerleave',()=>sprint=false);
+
+function showOver(type){
+  hbStop();
+  const ol=document.getElementById('ol');
+  ol.style.display='flex';ol.style.background='#000';
+  if(type==='win'){
+    ol.innerHTML=`<div id="ol-bg"></div><div id="ol-content" style="display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;z-index:2">
+      <div style="font-family:'Creepster',cursive;font-size:42px;color:#5DCAA5;text-shadow:0 0 18px #1a8a60;letter-spacing:2px">You Escaped!</div>
+      <div style="font:400 13px 'Rajdhani',sans-serif;color:#556655;text-align:center;line-height:1.8">You found the key and got out alive.<br>The teacher is still looking for you...</div>
+      <button onclick="restart()" style="font:700 13px 'Orbitron',sans-serif;color:#5DCAA5;background:rgba(0,40,20,0.8);border:1px solid rgba(80,180,120,0.4);padding:11px 28px;border-radius:8px;cursor:pointer;letter-spacing:2px">▶ PLAY AGAIN</button>
+    </div>`;
+  } else {
+    ol.innerHTML=`<div id="ol-bg" style="background:radial-gradient(ellipse at 50% 80%,rgba(120,0,0,0.5) 0%,#000 65%)"></div><div id="ol-content" style="display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;z-index:2">
+      <div style="font-family:'Creepster',cursive;font-size:48px;color:#cc2222;text-shadow:0 0 20px #880000;letter-spacing:2px;animation:flicker 2s infinite">Caught.</div>
+      <div style="font:400 13px 'Rajdhani',sans-serif;color:#664444;text-align:center;line-height:1.8">The scary teacher grabbed you.<br>Nobody heard you scream.</div>
+      <button onclick="restart()" style="font:700 13px 'Orbitron',sans-serif;color:#e8c050;background:rgba(40,5,0,0.9);border:1px solid rgba(180,60,0,0.45);padding:11px 28px;border-radius:8px;cursor:pointer;letter-spacing:2px">▶ TRY AGAIN</button>
+    </div>`;
+  }
+}
+
+window.restart=function(){
+  items=mkItems();enemy=mkEnemy();
+  gs={room:'hall',hasKey:false,hasTorch:false,codeRead:false,won:false,lost:false,tipT:0};
+  pl={x:10*T,y:8*T};sprint=false;shk=0;CP={open:false,inp:'',item:null,el:null};
+  const cp=document.getElementById('cpd');if(cp)cp.remove();
+  document.getElementById('fear').style.opacity=0;
+  document.getElementById('tip').style.opacity=0;
+  hbStop();updateHUD();
+  document.getElementById('ol').style.display='none';
+};
+
+document.getElementById('ol-btn').onclick=()=>{audio();document.getElementById('ol').style.display='none';running=true;};
+updateHUD();
+requestAnimationFrame(ts=>{last=ts;requestAnimationFrame(loop);});
+</script>
