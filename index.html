@@ -31,7 +31,7 @@ h1{
 </head>
 <body>
 
-<h1>💻 Click the button to get the secret code! 💻</h1>
+<h1>💻 Click the button to get the app code! 💻</h1>
 
 <button id="btn">GET CODE</button>
 
@@ -40,12 +40,12 @@ const btn = document.getElementById("btn");
 let escapes = 0;
 
 const texts = [
-    "Almost!",
-    "Too Slow!",
-    "Catch Me!",
-    "Try Again!",
-    "Nope!",
-    "Missed!",
+    "Dam hai toh pakad ke dikha! 😏",
+    "Bas hawa nikal gaya!",
+    "Chaldi!",
+    "Na ho payega!",
+    "Ruku kya!",
+    "Bot kehte!",
     "🤣"
 ];
 
@@ -76,9 +76,9 @@ btn.addEventListener("touchstart", function(e) { // Phone
 btn.addEventListener("click", () => {
     document.body.innerHTML = `
         <div style="padding-top:100px;">
-            <h1>😂 Just prank Aksh!</h1>
+            <h1>😂 Just prank all of you!</h1>
             <h2>Main terko kabhi code nahi dunga! 😜</h2>
-            <h3>You really chased that button!</h3>
+            <h3>khud se bana dusro ke dekhe cheating mat kar</h3>
         </div>
     `;
 });
