@@ -1,47 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secret Code</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    margin:0;
+    overflow:hidden;
+    background:#f5f5f5;
+}
+
+h1{
+    margin-top:80px;
+}
+
+#btn{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    font-size:24px;
+    padding:15px 30px;
+    cursor:pointer;
+}
+</style>
 </head>
-<body style="font-family:sans-serif;text-align:center;overflow:hidden;">
+<body>
 
 <h1>💻 Click the button to get the secret code! 💻</h1>
 
-<button id="btn" style="
-position:absolute;
-font-size:24px;
-padding:15px 30px;
-left:45%;
-top:50%;
-">
-GET CODE
-</button>
+<button id="btn">GET CODE</button>
 
 <script>
 const btn = document.getElementById("btn");
+let escapes = 0;
 
-btn.addEventListener("mouseover", () => {
-  btn.style.left =
-    Math.random() * (window.innerWidth - btn.offsetWidth) + "px";
-  btn.style.top =
-    Math.random() * (window.innerHeight - btn.offsetHeight) + "px";
-
-  btn.innerText = [
+const texts = [
     "Almost!",
     "Too Slow!",
     "Catch Me!",
     "Try Again!",
-    "Nope!"
-  ][Math.floor(Math.random() * 5)];
+    "Nope!",
+    "Missed!",
+    "🤣"
+];
+
+function moveButton() {
+    if (escapes >= 15) return;
+
+    const maxX = window.innerWidth - btn.offsetWidth;
+    const maxY = window.innerHeight - btn.offsetHeight;
+
+    btn.style.left = Math.random() * maxX + "px";
+    btn.style.top = Math.random() * maxY + "px";
+    btn.style.transform = "none";
+
+    btn.innerText = texts[Math.floor(Math.random() * texts.length)];
+
+    escapes++;
+}
+
+btn.addEventListener("mouseover", moveButton); // PC
+
+btn.addEventListener("touchstart", function(e) { // Phone
+    if (escapes < 15) {
+        e.preventDefault();
+        moveButton();
+    }
 });
 
 btn.addEventListener("click", () => {
-  document.body.innerHTML = `
-    <div style="padding-top:100px;">
-      <h1>😂 Just prank Aksh!</h1>
-      <h2>Main terko kabhi code nahi dunga! 😜</h2>
-    </div>
-  `;
+    document.body.innerHTML = `
+        <div style="padding-top:100px;">
+            <h1>😂 Just prank Aksh!</h1>
+            <h2>Main terko kabhi code nahi dunga! 😜</h2>
+            <h3>You really chased that button!</h3>
+        </div>
+    `;
 });
 </script>
 
