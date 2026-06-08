@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nightmare Escape</title>
+<style>
+body{margin:0;overflow:hidden;background:#000;color:#fff;font-family:Arial}
+#ui{position:fixed;top:10px;left:10px;z-index:10}
+#msg{position:fixed;top:40%;width:100%;text-align:center;font-size:40px;z-index:20}
+#start{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:30}
+button{padding:12px 24px}
+</style>
+</head>
+<body>
+<div id="ui">Keys: <span id="keys">0</span>/5</div>
+<div id="msg"></div>
+<div id="start"><h1>Nightmare Escape</h1><button id="play">Start</button></div>
+
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.166.1/build/three.module.js";
+import { PointerLockControls } from "https://unpkg.com/three@0.166.1/examples/jsm/controls/PointerLockControls.js";
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x000000,10,80);
+
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+const renderer=new THREE.WebGLRenderer();
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls=new PointerLockControls(camera,document.body);
+scene.add(controls.getObject());
+
+document.getElementById("play").onclick=()=>{
+ controls.lock();
+ document.getElementById("start").style.display="none";
+};
+
+scene.add(new THREE.AmbientLight(0x404040));
+
+const light=new THREE.SpotLight(0xffffff,50);
+camera.add(light);
+camera.add(light.target);
+scene.add(camera);
+
+const floor=new THREE.Mesh(
+ new THREE.PlaneGeometry(200,200),
+ new THREE.MeshStandardMaterial({color:0x222222})
+);
+floor.rotation.x=-Math.PI/2;
+scene.add(floor);
+
+const keys=[];
+for(let i=0;i<5;i++){
+ const k=new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshStandardMaterial({color:0xffff00})
+ );
+ k.position.set((Math.random()-0.5)*120,1,(Math.random()-0.5)*120);
+ scene.add(k);
+ keys.push(k);
+}
+
+const ghost=new THREE.Mesh(
+ new THREE.SphereGeometry(2,16,16),
+ new THREE.MeshStandardMaterial({color:0xffffff})
+);
+ghost.position.set(30,2,30);
+scene.add(ghost);
+
+let collected=0;
+let forward=false,back=false,left=false,right=false;
+
+addEventListener("keydown",e=>{
+ if(e.code==="KeyW") forward=true;
+ if(e.code==="KeyS") back=true;
+ if(e.code==="KeyA") left=true;
+ if(e.code==="KeyD") right=true;
+});
+addEventListener("keyup",e=>{
+ if(e.code==="KeyW") forward=false;
+ if(e.code==="KeyS") back=false;
+ if(e.code==="KeyA") left=false;
+ if(e.code==="KeyD") right=false;
+});
+
+const clock=new THREE.Clock();
+
+function animate(){
+ requestAnimationFrame(animate);
+ const dt=clock.getDelta();
+
+ if(forward) controls.moveForward(15*dt);
+ if(back) controls.moveForward(-15*dt);
+ if(left) controls.moveRight(-15*dt);
+ if(right) controls.moveRight(15*dt);
+
+ for(let i=keys.length-1;i>=0;i--){
+   if(camera.position.distanceTo(keys[i].position)<3){
+      scene.remove(keys[i]);
+      keys.splice(i,1);
+      collected++;
+      document.getElementById("keys").textContent=collected;
+   }
+ }
+
+ const dir=new THREE.Vector3().subVectors(camera.position,ghost.position).normalize();
+ ghost.position.add(dir.multiplyScalar(dt*4));
+
+ if(camera.position.distanceTo(ghost.position)<2){
+   document.getElementById("msg").textContent="GAME OVER";
+ }
+
+ if(collected===5){
+   document.getElementById("msg").textContent="YOU ESCAPED!";
+ }
+
+ renderer.render(scene,camera);
+}
+animate();
+
+addEventListener("resize",()=>{
+ camera.aspect=innerWidth/innerHeight;
+ camera.updateProjectionMatrix();
+ renderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
