@@ -267,7 +267,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:mon
   <div id="PC2">
     <div class="pav">🎮</div>
     <div class="pcol">
-      <div class="nr"><input id="NIN" placeholder="Your name..." maxlength="16" value="Aarav"><button class="nb" id="SETNAME">SET</button></div>
+      <div class="nr"><input id="NIN" placeholder="Your name..." maxlength="16"><button class="nb" id="SETNAME">SET</button></div>
       <div style="color:#888;font-size:9px">Level 1 • Diamond Rank</div>
     </div>
     <div class="cb">🪙 <span id="COINSL">1200</span><small>COINS</small></div>
@@ -287,7 +287,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:mon
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-var gMode='br',pname='Aarav',coins=5350,eSkin='s47',ePet='robo',eBund='diamond';
+var gMode='br',pname=localStorage.getItem('bzd_name')||'Aarav',coins=5350,eSkin='s47',ePet='robo',eBund='diamond';
 var eqEm=['WAVE','DANCE','TAUNT','LAUGH','SALUTE','SQUAT','FIST','BOW'];
 var msgTO=null,emTO=null,rldTO=null,ewOpen=false,isSitting=false;
 var gs={run:false,hp:100,maxHp:100,sh:60,maxSh:100,kills:0,tick:0,sprint:false,jump:false,jumpV:0,ground:true,x:0,y:1.7,z:0};
@@ -846,6 +846,7 @@ document.getElementById('SETNAME').addEventListener('click',function(){
   var v=document.getElementById('NIN').value.trim();
   if(!v)return;
   pname=v;
+  localStorage.setItem('bzd_name',pname);
   showMsg('Loading...',60);
   supaFetch('players?name=eq.'+encodeURIComponent(pname)).then(function(data){
     if(data&&data[0]){coins=data[0].coins||coins;updCoins();showMsg('WELCOME BACK '+pname+'! 🎮',100);}
@@ -874,6 +875,8 @@ PB.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();s
 
 // ── INIT ──────────────────────────────────────────────────────────────
 buildLobby();buildWBar();buildEW();updCoins();
+// Pre-fill name from localStorage
+(function(){var saved=localStorage.getItem('bzd_name');if(saved){document.getElementById('NIN').value=saved;}})();
 gameLoop();
 
 // ── SUPABASE ─────────────────────────────────────────────────────────
