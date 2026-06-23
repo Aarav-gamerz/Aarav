@@ -160,7 +160,7 @@ body.lefthand #LOOK{right:auto;left:0}
 .mpbtn.go{background:#55aaff;color:#000;border-color:#55aaff}
 #MPSTATUS{color:#777;font-size:10px;margin-top:4px}
 #MPROOMS{margin-top:8px}
-.mprrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.mprrow{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 10px;margin-bottom:5px;}
 .mprcode{color:#88ccff;font-size:10px;font-weight:700;flex:1}
 .mprplr{color:#777;font-size:9px}
 .mprjoin{background:rgba(0,220,100,0.15);color:#44ff88;border:1px solid rgba(0,220,100,0.3);border-radius:4px;padding:3px 10px;font-size:9px;cursor:pointer;font-family:monospace;font-weight:700}
@@ -276,7 +276,7 @@ body.lefthand #LOOK{right:auto;left:0}
     <h3>🌐 SQUAD</h3>
     <div class="squadbar" id="SQUADBAR"></div>
     <div class="mprow">
-      <input id="ROOMIN" placeholder="ROOM CODE" maxlength="8">
+      <input id="ROOMIN" placeholder="ROOM CODE" maxlength="8" style="text-transform:uppercase">
       <button class="mpbtn" id="CREATEBTN">CREATE</button>
       <button class="mpbtn go" id="JOINBTN">JOIN</button>
     </div>
@@ -1197,8 +1197,14 @@ function initPeer(cb){
   setMPStatus('🔄 Connecting to multiplayer server...');
   /* No explicit host = PeerJS picks its load-balanced default cloud broker, more reliable than a single fixed node */
   peer=new Peer({debug:0,
-    config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}});
-  peer.on('open',function(id){myPeerId=id;_peerRetries=0;console.log('PeerJS ID:',id);setMPStatus('✅ Connected! Create or join a room.');if(cb)cb(id);});
+    config:{iceServers:[
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'stun:stun2.l.google.com:19302'},
+      {urls:'stun:stun3.l.google.com:19302'},
+      {urls:'stun:global.stun.twilio.com:3478'}
+    ]}});
+  peer.on('open',function(id){myPeerId=id;_peerRetries=0;console.log('PeerJS ID:',id);setMPStatus('✅ Ready! Create a room or join one below.');if(cb)cb(id);});
   peer.on('connection',function(c){setupConn(c);});
   peer.on('call',function(call){answerCall(call);});
   peer.on('error',function(e){
@@ -1277,7 +1283,7 @@ function _createRoomDB(code,pid){
         setMPStatus('⚠ Room creation FAILED ('+why+'). Check your Supabase "rooms" table exists with public access.');
         return;
       }
-      roomCode=code;setMPStatus('✅ Room "'+code+'" ready! Share with friends.');loadRooms();renderSquadBar();
+      roomCode=code;setMPStatus('✅ Room "'+code+'" created! Share this code with friends then hit PLAY together.');loadRooms();renderSquadBar();
     });
   });
 }
@@ -1297,7 +1303,7 @@ function _joinRoomDB(code){
     roomCode=code;
     sfetch('rooms','POST',{room_code:code,peer_id:myPeerId,player_name:SD.name,created_at:new Date().toISOString()});
     rows.forEach(function(r){if(r.peer_id!==myPeerId)connectTo(r.peer_id);});
-    setMPStatus('✅ Joined "'+code+'" — '+rows.length+' player(s)');loadRooms();renderSquadBar();
+    setMPStatus('✅ Joined "'+code+'" — '+rows.length+' player(s) in room. Hit PLAY together!');loadRooms();renderSquadBar();
   });
 }
 function loadRooms(){
@@ -1676,8 +1682,14 @@ function gameLoop(){
 /* ── INIT ─────────────────────────────────── */
 buildLobby();buildWBar();buildEW();updCoins();applySettings();renderSquadBar();
 if(SD.name)document.getElementById('NIN').value=SD.name;
-setTimeout(function(){initPeer(function(id){console.log('PeerJS ready:',id);});loadRooms();},1200);
+setTimeout(function(){
+  // Clean stale rooms on startup
+  sfetch('rooms?created_at=lt.'+(new Date(Date.now()-7200000).toISOString()),'DELETE');
+  initPeer(function(id){console.log('PeerJS ready:',id);});
+  loadRooms();
+},1200);
 gameLoop();
+window.addEventListener('beforeunload',function(){if(typeof myPeerId!=='undefined'&&myPeerId)sfetch('rooms?peer_id=eq.'+encodeURIComponent(myPeerId),'DELETE');});
 console.log('Battle Zone 3D v4 ready!');
 </script>
 </body>
