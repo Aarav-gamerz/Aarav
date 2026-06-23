@@ -160,7 +160,7 @@ body.lefthand #LOOK{right:auto;left:0}
 .mpbtn.go{background:#55aaff;color:#000;border-color:#55aaff}
 #MPSTATUS{color:#777;font-size:10px;margin-top:4px}
 #MPROOMS{margin-top:8px}
-.mprrow{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 10px;margin-bottom:5px;}
+.mprrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
 .mprcode{color:#88ccff;font-size:10px;font-weight:700;flex:1}
 .mprplr{color:#777;font-size:9px}
 .mprjoin{background:rgba(0,220,100,0.15);color:#44ff88;border:1px solid rgba(0,220,100,0.3);border-radius:4px;padding:3px 10px;font-size:9px;cursor:pointer;font-family:monospace;font-weight:700}
@@ -276,7 +276,7 @@ body.lefthand #LOOK{right:auto;left:0}
     <h3>🌐 SQUAD</h3>
     <div class="squadbar" id="SQUADBAR"></div>
     <div class="mprow">
-      <input id="ROOMIN" placeholder="ROOM CODE" maxlength="8" style="text-transform:uppercase">
+      <input id="ROOMIN" placeholder="ROOM CODE" maxlength="8">
       <button class="mpbtn" id="CREATEBTN">CREATE</button>
       <button class="mpbtn go" id="JOINBTN">JOIN</button>
     </div>
@@ -1197,14 +1197,8 @@ function initPeer(cb){
   setMPStatus('🔄 Connecting to multiplayer server...');
   /* No explicit host = PeerJS picks its load-balanced default cloud broker, more reliable than a single fixed node */
   peer=new Peer({debug:0,
-    config:{iceServers:[
-      {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'},
-      {urls:'stun:stun2.l.google.com:19302'},
-      {urls:'stun:stun3.l.google.com:19302'},
-      {urls:'stun:global.stun.twilio.com:3478'}
-    ]}});
-  peer.on('open',function(id){myPeerId=id;_peerRetries=0;console.log('PeerJS ID:',id);setMPStatus('✅ Ready! Create a room or join one below.');if(cb)cb(id);});
+    config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}});
+  peer.on('open',function(id){myPeerId=id;_peerRetries=0;console.log('PeerJS ID:',id);setMPStatus('✅ Connected! Create or join a room.');if(cb)cb(id);});
   peer.on('connection',function(c){setupConn(c);});
   peer.on('call',function(call){answerCall(call);});
   peer.on('error',function(e){
@@ -1225,6 +1219,7 @@ function setupConn(conn){
     var rc=makeChar(0x4488ff,0x224466,0x112244);rc.position.set(5,0,5);scene.add(rc);
     rc.micSpr=makeMicSprite();rc.add(rc.micSpr);
     remoteChars[conn.peer]=rc;
+    if(gs.run)scene.add(rc); // add immediately if game already running
     conn.send({type:'hello',name:SD.name,peerId:myPeerId});
     updPeerList();_startPing(conn);renderSquadBar();
   });
@@ -1247,10 +1242,34 @@ function sendAll(data){Object.keys(conns).forEach(function(id){try{conns[id].sen
 function onPeerData(data,pid){
   if(!data||!data.type)return;
   switch(data.type){
-    case 'hello':if(remotePlayers[pid])remotePlayers[pid].name=data.name||'Player';updPeerList();renderSquadBar();break;
+    case 'hello':
+      if(remotePlayers[pid]){
+        remotePlayers[pid].name=data.name||'Player';
+        // Add name sprite above head
+        if(remoteChars[pid]){
+          var nc=document.createElement('canvas');nc.width=256;nc.height=64;
+          var nctx=nc.getContext('2d');
+          nctx.fillStyle='rgba(0,0,0,0.7)';nctx.roundRect(4,4,248,56,8);nctx.fill();
+          nctx.fillStyle='#ffffff';nctx.font='bold 28px monospace';nctx.textAlign='center';
+          nctx.fillText(data.name||'Player',128,38);
+          var ntx=new THREE.CanvasTexture(nc);
+          var nspr=new THREE.Sprite(new THREE.SpriteMaterial({map:ntx,depthTest:false}));
+          nspr.scale.set(1.4,0.35,1);nspr.position.set(0,2.5,0);
+          remoteChars[pid].add(nspr);
+        }
+      }
+      updPeerList();renderSquadBar();break;
     case 'pos':
       if(remotePlayers[pid]){var rp=remotePlayers[pid];rp.x=data.x;rp.y=data.y;rp.z=data.z;rp.yaw=data.yaw;rp.hp=data.hp;rp.kills=data.kills;}
-      if(remoteChars[pid]){remoteChars[pid].position.set(data.x,0,data.z);remoteChars[pid].rotation.y=data.yaw+Math.PI;walkAnim(remoteChars[pid],gs.tick);}
+      if(remoteChars[pid]){
+        remoteChars[pid].position.set(data.x,0,data.z);
+        remoteChars[pid].rotation.y=data.yaw+Math.PI;
+        // Update HP bar above head
+        if(remoteChars[pid].hpBar)updEHP(remoteChars[pid].hpBar,Math.max(0,data.hp)/100);
+        // Make HP bar face camera
+        if(remoteChars[pid].hpBar)remoteChars[pid].hpBar.rotation.y=-(data.yaw+Math.PI);
+        walkAnim(remoteChars[pid],gs.tick);
+      }
       break;
     case 'shot':
       var rd=new THREE.Vector3(data.dx,data.dy,data.dz);
@@ -1283,7 +1302,7 @@ function _createRoomDB(code,pid){
         setMPStatus('⚠ Room creation FAILED ('+why+'). Check your Supabase "rooms" table exists with public access.');
         return;
       }
-      roomCode=code;setMPStatus('✅ Room "'+code+'" created! Share this code with friends then hit PLAY together.');loadRooms();renderSquadBar();
+      roomCode=code;setMPStatus('✅ Room "'+code+'" ready! Share with friends.');loadRooms();renderSquadBar();
     });
   });
 }
@@ -1303,7 +1322,7 @@ function _joinRoomDB(code){
     roomCode=code;
     sfetch('rooms','POST',{room_code:code,peer_id:myPeerId,player_name:SD.name,created_at:new Date().toISOString()});
     rows.forEach(function(r){if(r.peer_id!==myPeerId)connectTo(r.peer_id);});
-    setMPStatus('✅ Joined "'+code+'" — '+rows.length+' player(s) in room. Hit PLAY together!');loadRooms();renderSquadBar();
+    setMPStatus('✅ Joined "'+code+'" — '+rows.length+' player(s)');loadRooms();renderSquadBar();
   });
 }
 function loadRooms(){
@@ -1574,7 +1593,11 @@ function clearScene(){
   bullets.forEach(function(b){scene.remove(b.mesh);});
   gloows.forEach(function(g){scene.remove(g.mesh);});
   airdrops.forEach(function(a){scene.remove(a.mesh);});
-  Object.keys(remoteChars).forEach(function(id){scene.remove(remoteChars[id]);});
+  // Don't remove remote chars — just reset their position
+  // Removing from scene makes them invisible when game restarts
+  Object.keys(remoteChars).forEach(function(id){
+    remoteChars[id].position.set(5,0,5);
+  });
   bots=[];pickups=[];bullets=[];gloows=[];airdrops=[];
 }
 
@@ -1583,6 +1606,11 @@ function startGame(){
   document.getElementById('LOBBY').style.display='none';
   document.getElementById('ENDSCREEN').style.display='none';
   stopConfetti();clearScene();showControls(true);
+  // Ensure all connected remote players are visible in scene
+  Object.keys(remoteChars).forEach(function(id){
+    if(!scene.getObjectById(remoteChars[id].id)){scene.add(remoteChars[id]);}
+    remoteChars[id].position.set(5+(Math.random()*6-3),0,5+(Math.random()*6-3));
+  });
   gs.hp=100;gs.maxHp=100;gs.sh=60;gs.maxSh=100;gs.kills=0;gs.tick=0;
   gs.sprint=false;gs.jump=false;gs.jumpV=0;gs.ground=true;gs.x=0;gs.y=1.7;gs.z=0;
   gs.myTeam=0;gs.csWins=[0,0];gs.csRound=0;gs.lwKills=[0,0];gs.botsAlive=0;
@@ -1613,6 +1641,8 @@ function startGame(){
   for(var i=0;i<24;i++)spawnPickup();
   updHP();updCoins();initWep(0);updModeInfo();updPeerList();
   gs.run=true;
+  // Re-announce ourselves to all connected peers so they get our name + position immediately
+  if(typeof sendAll==='function')sendAll({type:'hello',name:SD.name,peerId:myPeerId});
   showMsg('GAME START — '+gMode.toUpperCase()+'!',80);
   goFS();
 }
@@ -1682,14 +1712,8 @@ function gameLoop(){
 /* ── INIT ─────────────────────────────────── */
 buildLobby();buildWBar();buildEW();updCoins();applySettings();renderSquadBar();
 if(SD.name)document.getElementById('NIN').value=SD.name;
-setTimeout(function(){
-  // Clean stale rooms on startup
-  sfetch('rooms?created_at=lt.'+(new Date(Date.now()-7200000).toISOString()),'DELETE');
-  initPeer(function(id){console.log('PeerJS ready:',id);});
-  loadRooms();
-},1200);
+setTimeout(function(){initPeer(function(id){console.log('PeerJS ready:',id);});loadRooms();},1200);
 gameLoop();
-window.addEventListener('beforeunload',function(){if(typeof myPeerId!=='undefined'&&myPeerId)sfetch('rooms?peer_id=eq.'+encodeURIComponent(myPeerId),'DELETE');});
 console.log('Battle Zone 3D v4 ready!');
 </script>
 </body>
