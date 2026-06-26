@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Battle Zone 3D – Aarav Gamerz</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffd700">
+<link rel="apple-touch-icon" href="pwa_icon_192.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:monospace;touch-action:none}
@@ -34,6 +37,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:mon
 #AMMO .ac{color:#fff;font-size:30px;font-weight:700;text-shadow:0 1px 4px #000;line-height:1}
 #AMMO .ar{color:#aaa;font-size:12px}
 #MSG{position:absolute;top:35%;left:50%;transform:translateX(-50%);color:#ffd700;font-size:15px;font-weight:700;text-shadow:0 2px 8px #000;text-align:center;width:90%;letter-spacing:1px;pointer-events:none}
+#TOAST{position:fixed;top:8%;left:50%;transform:translateX(-50%);color:#ffd700;font-size:14px;font-weight:700;text-shadow:0 2px 8px #000;background:rgba(0,0,0,0.55);padding:8px 18px;border-radius:8px;text-align:center;max-width:90%;letter-spacing:1px;pointer-events:none;z-index:120;display:none}
+#TOAST.show{display:block}
 #ZONE{position:absolute;top:68px;left:10px;color:#55aaff;font-size:10px;text-shadow:0 1px 3px #000;display:none;font-weight:700}
 #SPRI{position:absolute;top:82px;left:10px;color:#ffaa00;font-size:10px;display:none;font-weight:700}
 #BOTCNT{position:absolute;top:96px;left:10px;color:#ff9944;font-size:10px;text-shadow:0 1px 3px #000;display:none;font-weight:700}
@@ -164,12 +169,22 @@ body.lefthand #LOOK{right:auto;left:0}
 .mprcode{color:#88ccff;font-size:10px;font-weight:700;flex:1}
 .mprplr{color:#777;font-size:9px}
 .mprjoin{background:rgba(0,220,100,0.15);color:#44ff88;border:1px solid rgba(0,220,100,0.3);border-radius:4px;padding:3px 10px;font-size:9px;cursor:pointer;font-family:monospace;font-weight:700}
+.mprjoin:disabled{opacity:0.35;cursor:default}
+.frdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.frdot.on{background:#44ff88;box-shadow:0 0 6px rgba(60,255,140,0.7)}
+.frdot.off{background:#555}
+.frname{color:#fff;font-size:11px;font-weight:700;flex:1}
+.frstatus{color:#666;font-size:8px}
+.frremove{background:none;border:none;color:#664;font-size:14px;cursor:pointer;padding:2px 6px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .cd{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 4px;text-align:center;cursor:pointer;transition:border-color .2s}
 .cd.ow{border-color:#ffd700}.cd.eq{border-color:#00ffaa;background:rgba(0,255,170,0.07)}.cd.pe{border-color:#ff88cc;background:rgba(255,100,180,0.07)}.cd.em{border-color:#ffd700;background:rgba(255,215,0,0.08)}
 .cd .ci{font-size:22px}.cd .cn{color:#ddd;font-size:9px;font-weight:700;margin-top:3px}.cd .cp{color:#ffd700;font-size:9px}.cd .cs{color:#88ccff;font-size:8px}
 #PLAYBTN{display:block;width:92%;max-width:360px;margin:18px auto 10px;padding:20px 0;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000;border:none;border-radius:12px;font-size:24px;font-weight:900;letter-spacing:3px;font-family:monospace;cursor:pointer;box-shadow:0 0 30px rgba(255,215,0,0.6);-webkit-appearance:none;touch-action:manipulation}
+#INSTALLBTN{display:flex;width:92%;max-width:360px;margin:0 auto 8px;padding:13px 0;background:linear-gradient(135deg,#22cc66,#11aa55);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:900;letter-spacing:2px;font-family:monospace;cursor:pointer;box-shadow:0 0 18px rgba(30,200,100,0.45);-webkit-appearance:none;touch-action:manipulation;align-items:center;justify-content:center;gap:8px}
+#INSTALLBTN.hide{display:none}
+#INSTALLBTN.show{display:flex}
 #PLAYBTN:active{transform:scale(0.97)}
 #LBBTN{display:block;width:92%;max-width:360px;margin:8px auto;padding:12px 0;background:rgba(255,215,0,0.1);color:#ffd700;border:2px solid rgba(255,215,0,0.4);border-radius:10px;font-size:14px;font-weight:700;letter-spacing:2px;font-family:monospace;cursor:pointer;touch-action:manipulation;-webkit-appearance:none}
 </style>
@@ -178,6 +193,7 @@ body.lefthand #LOOK{right:auto;left:0}
 <div id="ROT"><span>📱</span><h2>ROTATE YOUR PHONE</h2><p style="color:#aaa;font-size:12px;font-family:monospace;margin-top:6px">Turn sideways to play</p></div>
 <canvas id="c"></canvas>
 <canvas id="CONFETTI"></canvas>
+<div id="TOAST"></div>
 <div id="HUD">
   <div class="hpw"><div class="lbl">HP</div><div class="bar"><div class="fill" id="HPF" style="width:100%"></div></div><div class="num" id="HPN">100/100</div></div>
   <div class="shw"><div class="bar"><div class="fill" id="SHF" style="width:60%"></div></div><div class="num" id="SHN">SHIELD: 60</div></div>
@@ -276,17 +292,17 @@ body.lefthand #LOOK{right:auto;left:0}
     <h3>🌐 SQUAD</h3>
     <div class="squadbar" id="SQUADBAR"></div>
     <div class="mprow">
-      <input id="ROOMIN" placeholder="ROOM CODE" maxlength="8">
-      <button class="mpbtn" id="CREATEBTN">CREATE</button>
-      <button class="mpbtn go" id="JOINBTN">JOIN</button>
+      <input id="FRIENDIN" placeholder="FRIEND'S NAME" maxlength="16">
+      <button class="mpbtn go" id="ADDFRIENDBTN">+ ADD</button>
     </div>
-    <div id="MPSTATUS">💡 Create or join a room to play with friends</div>
-    <div id="MPROOMS"></div>
+    <div id="MPSTATUS">💡 Add friends by name, then tap JOIN when they're online</div>
+    <div id="FRIENDLIST"></div>
   </div>
   <div class="lsec"><h3>💎 BUNDLES</h3><div class="g4" id="BDGRID"></div></div>
   <div class="lsec"><h3>🔫 WEAPON SKINS</h3><div class="g3" id="GNGRID"></div></div>
   <div class="lsec"><h3>🐾 PETS</h3><div class="g3" id="PTGRID"></div></div>
   <div class="lsec"><h3>🎭 EMOTES</h3><div class="g4" id="EMGRID"></div></div>
+  <button id="INSTALLBTN">📲 INSTALL NOW</button>
   <button id="PLAYBTN">▶ PLAY NOW</button>
   <button id="LBBTN">🏆 LEADERBOARD</button>
 </div>
@@ -374,12 +390,13 @@ var SD={
   eb:'diamond',es:'s47',ep:'robo',
   em:['WAVE','DANCE','TAUNT','LAUGH','SALUTE','SQUAT','FIST','BOW'],
   totalKills:0,gamesPlayed:0,
+  friends:[],
   set:{hud:100,opa:100,sen:100,leftHand:false,muted:false,cross:'#ffffff',showPing:true,showZone:true,showFps:false}
 };
 function loadSD(){
   try{
     var d=JSON.parse(localStorage.getItem('bzd_v4')||'{}');
-    ['name','coins','ob','os','op','eb','es','ep','em','totalKills','gamesPlayed'].forEach(function(k){
+    ['name','coins','ob','os','op','eb','es','ep','em','totalKills','gamesPlayed','friends'].forEach(function(k){
       if(d[k]!==undefined)SD[k]=d[k];
     });
     if(d.set)for(var k2 in d.set)SD.set[k2]=d.set[k2];
@@ -415,7 +432,7 @@ var lookSensMult=1,soundMuted=false;
 /* ── MULTIPLAYER ──────────────────────────── */
 var peer=null,myPeerId=null;
 var conns={},voiceConns={},remoteChars={},remotePlayers={};
-var localStream=null,micOn=false,pingMs=0,roomCode='';
+var localStream=null,micOn=false,pingMs=0;
 
 /* ── THREE.JS ─────────────────────────────── */
 var canvas=document.getElementById('c');
@@ -636,8 +653,15 @@ function buildFPWep(i){
 
 /* ── UI HELPERS ───────────────────────────── */
 function showMsg(t,d){
-  d=d||70;document.getElementById('MSG').textContent=t;
-  clearTimeout(msgTO);msgTO=setTimeout(function(){document.getElementById('MSG').textContent='';},d*16);
+  d=d||70;
+  document.getElementById('MSG').textContent=t;
+  var toast=document.getElementById('TOAST');
+  toast.textContent=t;toast.classList.add('show');
+  clearTimeout(msgTO);
+  msgTO=setTimeout(function(){
+    document.getElementById('MSG').textContent='';
+    toast.classList.remove('show');
+  },d*16);
 }
 function setSprint(v){gs.sprint=v;document.getElementById('RUN').classList.toggle('on',v);document.getElementById('SPRI').style.display=v?'block':'none';}
 function setSit(v){isSitting=v;document.getElementById('SIT').classList.toggle('on',v);}
@@ -1219,7 +1243,6 @@ function setupConn(conn){
     var rc=makeChar(0x4488ff,0x224466,0x112244);rc.position.set(5,0,5);scene.add(rc);
     rc.micSpr=makeMicSprite();rc.add(rc.micSpr);
     remoteChars[conn.peer]=rc;
-    if(gs.run)scene.add(rc); // add immediately if game already running
     conn.send({type:'hello',name:SD.name,peerId:myPeerId});
     updPeerList();_startPing(conn);renderSquadBar();
   });
@@ -1242,34 +1265,10 @@ function sendAll(data){Object.keys(conns).forEach(function(id){try{conns[id].sen
 function onPeerData(data,pid){
   if(!data||!data.type)return;
   switch(data.type){
-    case 'hello':
-      if(remotePlayers[pid]){
-        remotePlayers[pid].name=data.name||'Player';
-        // Add name sprite above head
-        if(remoteChars[pid]){
-          var nc=document.createElement('canvas');nc.width=256;nc.height=64;
-          var nctx=nc.getContext('2d');
-          nctx.fillStyle='rgba(0,0,0,0.7)';nctx.roundRect(4,4,248,56,8);nctx.fill();
-          nctx.fillStyle='#ffffff';nctx.font='bold 28px monospace';nctx.textAlign='center';
-          nctx.fillText(data.name||'Player',128,38);
-          var ntx=new THREE.CanvasTexture(nc);
-          var nspr=new THREE.Sprite(new THREE.SpriteMaterial({map:ntx,depthTest:false}));
-          nspr.scale.set(1.4,0.35,1);nspr.position.set(0,2.5,0);
-          remoteChars[pid].add(nspr);
-        }
-      }
-      updPeerList();renderSquadBar();break;
+    case 'hello':if(remotePlayers[pid])remotePlayers[pid].name=data.name||'Player';updPeerList();renderSquadBar();break;
     case 'pos':
       if(remotePlayers[pid]){var rp=remotePlayers[pid];rp.x=data.x;rp.y=data.y;rp.z=data.z;rp.yaw=data.yaw;rp.hp=data.hp;rp.kills=data.kills;}
-      if(remoteChars[pid]){
-        remoteChars[pid].position.set(data.x,0,data.z);
-        remoteChars[pid].rotation.y=data.yaw+Math.PI;
-        // Update HP bar above head
-        if(remoteChars[pid].hpBar)updEHP(remoteChars[pid].hpBar,Math.max(0,data.hp)/100);
-        // Make HP bar face camera
-        if(remoteChars[pid].hpBar)remoteChars[pid].hpBar.rotation.y=-(data.yaw+Math.PI);
-        walkAnim(remoteChars[pid],gs.tick);
-      }
+      if(remoteChars[pid]){remoteChars[pid].position.set(data.x,0,data.z);remoteChars[pid].rotation.y=data.yaw+Math.PI;walkAnim(remoteChars[pid],gs.tick);}
       break;
     case 'shot':
       var rd=new THREE.Vector3(data.dx,data.dy,data.dz);
@@ -1289,55 +1288,74 @@ function onPeerData(data,pid){
 }
 function _startPing(conn){setInterval(function(){try{conn.send({type:'ping',ts:Date.now()});}catch(e){}},3000);}
 
-/* ── ROOM SYSTEM ──────────────────────────── */
-function createRoom(code){
-  setMPStatus('🔄 Creating room...');
-  if(!peer){initPeer(function(id){_createRoomDB(code,id);});}else _createRoomDB(code,myPeerId);
-}
-function _createRoomDB(code,pid){
-  sfetch('rooms?peer_id=eq.'+encodeURIComponent(pid),'DELETE').then(function(){
-    sfetch('rooms','POST',{room_code:code,peer_id:pid,player_name:SD.name,created_at:new Date().toISOString()}).then(function(res){
-      if(!res||res.__error||!Array.isArray(res)||res.length===0){
+/* ── FRIEND LIST / PRESENCE SYSTEM ─────────
+   Reuses the existing "rooms" table as a presence directory:
+   each player's own name (uppercased) becomes their lookup key,
+   so friends can find your current peer_id by name instead of a room code. */
+var friendStatus={}; // name -> {online:bool, peerId:string|null}
+function presenceKey(name){return (name||'').trim().toUpperCase();}
+
+function registerPresence(){
+  if(!SD.name||!myPeerId)return;
+  var key=presenceKey(SD.name);
+  sfetch('rooms?peer_id=eq.'+encodeURIComponent(myPeerId),'DELETE').then(function(){
+    sfetch('rooms','POST',{room_code:key,peer_id:myPeerId,player_name:SD.name,created_at:new Date().toISOString()}).then(function(res){
+      if(!res||res.__error){
         var why=res&&res.network?'network blocked':(res&&res.data&&res.data.message)?res.data.message:'unknown error';
-        setMPStatus('⚠ Room creation FAILED ('+why+'). Check your Supabase "rooms" table exists with public access.');
-        return;
+        setMPStatus('⚠ Could not go online ('+why+'). Friends won\'t be able to find you yet.');
       }
-      roomCode=code;setMPStatus('✅ Room "'+code+'" ready! Share with friends.');loadRooms();renderSquadBar();
     });
   });
 }
-function joinRoom(code){
-  code=code.toUpperCase();if(!code){setMPStatus('Enter a room code!');return;}
-  setMPStatus('🔍 Finding "'+code+'"...');
-  if(!peer){initPeer(function(){_joinRoomDB(code);});}else _joinRoomDB(code);
+function addFriend(){
+  var v=document.getElementById('FRIENDIN').value.trim();
+  if(!v){setMPStatus('Type a friend\'s name first!');return;}
+  if(presenceKey(v)===presenceKey(SD.name)){setMPStatus('That\'s your own name!');return;}
+  if(SD.friends.some(function(f){return presenceKey(f)===presenceKey(v);})){setMPStatus('Already in your friend list!');return;}
+  SD.friends.push(v);saveSD();
+  document.getElementById('FRIENDIN').value='';
+  renderFriendList();refreshFriendStatuses();
 }
-function _joinRoomDB(code){
-  sfetch('rooms?room_code=eq.'+encodeURIComponent(code)).then(function(rows){
-    if(!rows||rows.__error){
-      var why=rows&&rows.network?'network blocked':(rows&&rows.data&&rows.data.message)?rows.data.message:'unknown error';
-      setMPStatus('⚠ Could not reach room list ('+why+'). Check your Supabase "rooms" table/permissions.');
-      return;
-    }
-    if(!rows.length){setMPStatus('⚠ Room not found: '+code);return;}
-    roomCode=code;
-    sfetch('rooms','POST',{room_code:code,peer_id:myPeerId,player_name:SD.name,created_at:new Date().toISOString()});
-    rows.forEach(function(r){if(r.peer_id!==myPeerId)connectTo(r.peer_id);});
-    setMPStatus('✅ Joined "'+code+'" — '+rows.length+' player(s)');loadRooms();renderSquadBar();
-  });
+function removeFriend(name){
+  SD.friends=SD.friends.filter(function(f){return presenceKey(f)!==presenceKey(name);});
+  delete friendStatus[presenceKey(name)];
+  saveSD();renderFriendList();
 }
-function loadRooms(){
-  sfetch('rooms?order=room_code.asc&limit=30').then(function(rows){
-    if(!rows||!rows.length){document.getElementById('MPROOMS').innerHTML='';return;}
-    var rm={};rows.forEach(function(r){if(!rm[r.room_code])rm[r.room_code]=[];rm[r.room_code].push(r.player_name||'?');});
-    var h='';
-    Object.keys(rm).forEach(function(code){
-      var pl=rm[code];
-      h+='<div class="mprrow"><span class="mprcode">'+code+'</span><span class="mprplr">'+pl.length+'👤 '+pl.slice(0,3).join(', ')+'</span>';
-      if(code!==roomCode)h+='<button class="mprjoin" onclick="joinRoom(\''+code+'\')">JOIN</button>';
-      h+='</div>';
+function joinFriend(name){
+  var st=friendStatus[presenceKey(name)];
+  if(!st||!st.online||!st.peerId){setMPStatus(name+' is offline right now.');return;}
+  if(!peer){initPeer(function(){connectTo(st.peerId);setMPStatus('🔗 Connecting to '+name+'...');});}
+  else{connectTo(st.peerId);setMPStatus('🔗 Connecting to '+name+'...');}
+}
+function refreshFriendStatuses(){
+  if(!SD.friends.length)return;
+  SD.friends.forEach(function(name){
+    sfetch('rooms?room_code=eq.'+encodeURIComponent(presenceKey(name))).then(function(rows){
+      var key=presenceKey(name);
+      if(rows&&!rows.__error&&rows.length){
+        friendStatus[key]={online:true,peerId:rows[0].peer_id};
+      }else{
+        friendStatus[key]={online:false,peerId:null};
+      }
+      renderFriendList();
     });
-    document.getElementById('MPROOMS').innerHTML=h;
   });
+}
+function renderFriendList(){
+  var el=document.getElementById('FRIENDLIST');
+  if(!SD.friends.length){el.innerHTML='<div style="color:#555;font-size:9px;padding:6px 0">No friends added yet — type a name above!</div>';return;}
+  var h='';
+  SD.friends.forEach(function(name){
+    var st=friendStatus[presenceKey(name)]||{online:false};
+    h+='<div class="mprrow">';
+    h+='<span class="frdot '+(st.online?'on':'off')+'"></span>';
+    h+='<span class="frname">'+name+'</span>';
+    h+='<span class="frstatus">'+(st.online?'ONLINE':'OFFLINE')+'</span>';
+    h+='<button class="mprjoin" '+(st.online?'':'disabled')+' onclick="joinFriend(\''+name.replace(/'/g,"\\'")+'\')">JOIN</button>';
+    h+='<button class="frremove" onclick="removeFriend(\''+name.replace(/'/g,"\\'")+'\')">✕</button>';
+    h+='</div>';
+  });
+  el.innerHTML=h;
 }
 function setMPStatus(t){document.getElementById('MPSTATUS').textContent=t;}
 function squadSizeForMode(){return gMode==='cs'?4:gMode==='br'?4:1;}
@@ -1359,13 +1377,8 @@ function renderSquadBar(){
   bar.innerHTML=h;
 }
 function inviteSquadSlot(){
-  if(!roomCode){
-    var code=Math.random().toString(36).substring(2,7).toUpperCase();
-    document.getElementById('ROOMIN').value=code;createRoom(code);
-  }else{
-    setMPStatus('📋 Share room code "'+roomCode+'" with your squad to fill this slot!');
-    var ri=document.getElementById('ROOMIN');ri.value=roomCode;ri.focus();ri.select();
-  }
+  setMPStatus('👇 Add a friend by name below, then tap JOIN once they\'re online!');
+  document.getElementById('FRIENDIN').focus();
 }
 
 /* ── VOICE CHAT ───────────────────────────── */
@@ -1480,6 +1493,7 @@ document.getElementById('EBTNLOBBY').addEventListener('touchstart',function(e){e
 document.getElementById('SETNAME').addEventListener('click',function(){
   var v=document.getElementById('NIN').value.trim();if(!v)return;
   SD.name=v;saveSD();updCoins();showMsg('Hi '+v+'! 🎮');renderSquadBar();
+  registerPresence();
   sfetch('players?name=eq.'+encodeURIComponent(v)).then(function(d){
     if(d&&d[0]){SD.coins=d[0].coins||SD.coins;updCoins();}
   });
@@ -1492,11 +1506,8 @@ document.querySelectorAll('.md').forEach(function(btn){
   btn.addEventListener('touchstart',function(e){e.preventDefault();sel();},{passive:false});
 });
 
-document.getElementById('CREATEBTN').addEventListener('click',function(){
-  var code=(document.getElementById('ROOMIN').value.trim()||Math.random().toString(36).substring(2,7)).toUpperCase();
-  document.getElementById('ROOMIN').value=code;createRoom(code);
-});
-document.getElementById('JOINBTN').addEventListener('click',function(){joinRoom(document.getElementById('ROOMIN').value.trim());});
+document.getElementById('ADDFRIENDBTN').addEventListener('click',addFriend);
+document.getElementById('ADDFRIENDBTN').addEventListener('touchstart',function(e){e.preventDefault();addFriend();},{passive:false});
 document.getElementById('LBBTN').addEventListener('click',showLeaderboard);
 document.getElementById('LBBTN').addEventListener('touchstart',function(e){e.preventDefault();showLeaderboard();},{passive:false});
 document.getElementById('PLAYBTN').addEventListener('click',function(e){e.preventDefault();startGame();});
@@ -1593,11 +1604,7 @@ function clearScene(){
   bullets.forEach(function(b){scene.remove(b.mesh);});
   gloows.forEach(function(g){scene.remove(g.mesh);});
   airdrops.forEach(function(a){scene.remove(a.mesh);});
-  // Don't remove remote chars — just reset their position
-  // Removing from scene makes them invisible when game restarts
-  Object.keys(remoteChars).forEach(function(id){
-    remoteChars[id].position.set(5,0,5);
-  });
+  Object.keys(remoteChars).forEach(function(id){scene.remove(remoteChars[id]);});
   bots=[];pickups=[];bullets=[];gloows=[];airdrops=[];
 }
 
@@ -1606,11 +1613,6 @@ function startGame(){
   document.getElementById('LOBBY').style.display='none';
   document.getElementById('ENDSCREEN').style.display='none';
   stopConfetti();clearScene();showControls(true);
-  // Ensure all connected remote players are visible in scene
-  Object.keys(remoteChars).forEach(function(id){
-    if(!scene.getObjectById(remoteChars[id].id)){scene.add(remoteChars[id]);}
-    remoteChars[id].position.set(5+(Math.random()*6-3),0,5+(Math.random()*6-3));
-  });
   gs.hp=100;gs.maxHp=100;gs.sh=60;gs.maxSh=100;gs.kills=0;gs.tick=0;
   gs.sprint=false;gs.jump=false;gs.jumpV=0;gs.ground=true;gs.x=0;gs.y=1.7;gs.z=0;
   gs.myTeam=0;gs.csWins=[0,0];gs.csRound=0;gs.lwKills=[0,0];gs.botsAlive=0;
@@ -1641,8 +1643,6 @@ function startGame(){
   for(var i=0;i<24;i++)spawnPickup();
   updHP();updCoins();initWep(0);updModeInfo();updPeerList();
   gs.run=true;
-  // Re-announce ourselves to all connected peers so they get our name + position immediately
-  if(typeof sendAll==='function')sendAll({type:'hello',name:SD.name,peerId:myPeerId});
   showMsg('GAME START — '+gMode.toUpperCase()+'!',80);
   goFS();
 }
@@ -1651,7 +1651,7 @@ function openLobby(){
   gs.run=false;setSprint(false);setSit(false);showControls(false);
   document.getElementById('LOBBY').style.display='flex';
   document.getElementById('ENDSCREEN').style.display='none';
-  stopConfetti();buildLobby();loadRooms();renderSquadBar();
+  stopConfetti();buildLobby();renderFriendList();refreshFriendStatuses();renderSquadBar();
   if(SD.name)document.getElementById('NIN').value=SD.name;
   updCoins();
 }
@@ -1710,6 +1710,40 @@ function gameLoop(){
 }
 
 /* ── INIT ─────────────────────────────────── */
+/* ── PWA INSTALL (no APK/Android Studio needed for this path) ──── */
+var _deferredInstallEvent = null;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('SW register failed:', e); });
+}
+(function(){
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  var inNativeApp = !!(window.Capacitor);
+  if (isStandalone || inNativeApp) {
+    document.getElementById('INSTALLBTN').classList.add('hide');
+  }
+})();
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  _deferredInstallEvent = e;
+});
+window.addEventListener('appinstalled', function(){
+  document.getElementById('INSTALLBTN').classList.add('hide');
+  showMsg('✅ INSTALLED! Find it on your home screen.', 150);
+});
+function tryInstall(){
+  if (!_deferredInstallEvent) {
+    showMsg('📲 Open browser menu (⋮) → "Add to Home Screen" or "Install App"', 180);
+    return;
+  }
+  _deferredInstallEvent.prompt();
+  _deferredInstallEvent.userChoice.then(function(choice){
+    if (choice.outcome === 'accepted') showMsg('Installing... 🎉', 100);
+    _deferredInstallEvent = null;
+    document.getElementById('INSTALLBTN').classList.add('hide');
+  });
+}
+addBtn('INSTALLBTN', tryInstall);
+
 buildLobby();buildWBar();buildEW();updCoins();applySettings();renderSquadBar();
 if(SD.name)document.getElementById('NIN').value=SD.name;
 setTimeout(function(){initPeer(function(id){console.log('PeerJS ready:',id);});loadRooms();},1200);
@@ -1717,3 +1751,4 @@ gameLoop();
 console.log('Battle Zone 3D v4 ready!');
 </script>
 </body>
+</html>
